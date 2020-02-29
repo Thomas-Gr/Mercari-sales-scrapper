@@ -1,5 +1,6 @@
 val scrapper = Scrapper("path")
 val exporter = Exporter("path")
+val sheetsExporter = SheetsExporter("sheetId")
 
 fun main() {
   scrapper.setUpAndWaitForConnection()
@@ -8,6 +9,7 @@ fun main() {
   val purchaseData = scrapper.scrap(1..1, "purchase")
 
   exporter.toFile(purchaseData.union(purchasedData))
+  sheetsExporter.toSheet(purchaseData.union(purchasedData))
 
   scrapper.close()
 }

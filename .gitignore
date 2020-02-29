@@ -5,3 +5,5 @@
 /gradlew
 /gradlew.bat
 /settings.gradle
+/src/main/resources/credentials.json
+/tokens/

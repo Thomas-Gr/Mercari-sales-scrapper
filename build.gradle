@@ -14,12 +14,15 @@ repositories {
 
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
-    compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '2.41.0'
+    compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '3.9.1'
 
-    compile 'com.google.guava:guava:20.0'
     compileOnly "org.projectlombok:lombok:1.16.12"
     annotationProcessor "org.projectlombok:lombok:1.18.6"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+
+    compile 'com.google.api-client:google-api-client:1.23.0'
+    compile 'com.google.oauth-client:google-oauth-client-jetty:1.23.0'
+    compile 'com.google.apis:google-api-services-sheets:v4-rev581-1.25.0'
 }
 compileKotlin {
     kotlinOptions {
