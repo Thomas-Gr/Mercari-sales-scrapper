@@ -4,4 +4,4 @@ data class MercariData(
     val title: String,
     val price: String,
     val date: String,
-    val state: String)
+    val isDone: Boolean)

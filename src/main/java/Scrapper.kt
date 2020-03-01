@@ -19,7 +19,7 @@ class Scrapper(driverPath: String) {
         .map { readOrderPage(it.first, it.second) }
   }
 
-  private fun readListingPage(i: Int, page: String): List<Pair<String, String>> {
+  private fun readListingPage(i: Int, page: String): List<Pair<String, Boolean>> {
     driver.get("https://www.mercari.com/jp/mypage/$page/?page=$i")
 
     return driver.findElements(By.className("mypage-item-link"))
@@ -28,12 +28,12 @@ class Scrapper(driverPath: String) {
 
           Pair(
               it.getAttribute("href"),
-              if (isDone) "Done" else "In Progress"
+              isDone
           )
         }
   }
 
-  private fun readOrderPage(href: String, state: String): MercariData {
+  private fun readOrderPage(href: String, state: Boolean): MercariData {
     Thread.sleep(200L)
     driver.get(href)
 
