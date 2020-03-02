@@ -1,8 +1,11 @@
-import SheetsCredentialProvider.getCredentials
+import utils.SheetsCredentialProvider.getCredentials
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.*
+import utils.addValuesToSheet
+import utils.createHeader
+import utils.resizeCells
 import java.time.format.DateTimeFormatter
 
 private val JSON_FACTORY = JacksonFactory.getDefaultInstance()
@@ -24,11 +27,13 @@ class SheetsExporter(private val spreadsheetId: String, private val sort: Boolea
 
     val alreadyExportedValues = getValuesAlreadyPresentInSpreadsheet(spreadsheets)
 
-    createHeader(spreadsheets)
+    createHeader(spreadsheets, spreadsheetId, RANGE, HEADER)
     updateUpdatedData(data, alreadyExportedValues, spreadsheets)
     appendNewValues(spreadsheets, data.filter { !alreadyExportedValues.containsKey(it.link) })
-    resizeCells(spreadsheets)
-    sort(spreadsheets)
+    resizeCells(spreadsheets, spreadsheetId, 0, 1)
+    if (sort) {
+      sort(spreadsheets)
+    }
   }
 
   private fun sort(spreadsheets: Sheets.Spreadsheets) {
@@ -93,37 +98,6 @@ class SheetsExporter(private val spreadsheetId: String, private val sort: Boolea
           if (it.isDone) "Done" else "In Progress")
     }
 
-    spreadsheets
-        .values()
-        .append(
-            spreadsheetId,
-            RANGE,
-            ValueRange().setMajorDimension("ROWS").setValues(values))
-        .setValueInputOption("USER_ENTERED")
-        .execute()
-  }
-
-  private fun createHeader(spreadsheets: Sheets.Spreadsheets) {
-    spreadsheets
-        .values()
-        .update(
-            spreadsheetId,
-            RANGE,
-            ValueRange()
-                .setMajorDimension("ROWS")
-                .setValues(listOf(HEADER)))
-        .setValueInputOption("USER_ENTERED")
-        .execute()
-  }
-
-  private fun resizeCells(spreadsheets: Sheets.Spreadsheets) {
-    spreadsheets.batchUpdate(
-        spreadsheetId,
-        BatchUpdateSpreadsheetRequest().setRequests(listOf(Request().setUpdateDimensionProperties(
-            UpdateDimensionPropertiesRequest()
-                .setRange(DimensionRange().setSheetId(0).setDimension("ROWS").setStartIndex(1))
-                .setProperties(DimensionProperties().setPixelSize(100))
-                .setFields("pixelSize")))))
-        .execute()
+    addValuesToSheet(spreadsheets, spreadsheetId, RANGE, values)
   }
 }
