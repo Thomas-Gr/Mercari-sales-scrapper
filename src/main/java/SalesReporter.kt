@@ -1,9 +1,8 @@
-fun main() {
-  val saleFiles = listOf(
-      "example"
-  )
+import common.SALE_FILES
+import common.SPREADSHEET_ID
 
-  for (saleFile in saleFiles) {
-    SingleSaleReporter("example", saleFile).report()
+fun main() {
+  for (saleFile in SALE_FILES) {
+    SingleSaleReporter(SPREADSHEET_ID, saleFile).report()
   }
 }

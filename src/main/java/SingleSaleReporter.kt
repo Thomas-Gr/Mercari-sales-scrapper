@@ -11,9 +11,9 @@ private val JSON_FACTORY = JacksonFactory.getDefaultInstance()
 private const val APPLICATION_NAME = "Mercari sales scrapper"
 private val HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport()
 private const val RANGE = "!A2:H"
-private val HEADER = listOf("Image", "Link", "Time of purchase", "Translated title", "Price")
+private val HEADER = listOf("Image", "Link", "Time of purchase", "Translated title", "Price (yen)", "Price (euro)")
 
-class SingleSaleReporter(private val referenceSpreadsheetId: String, private val spreadsheetToUpdateId: String) {
+class SingleSaleReporter(private val referenceSpreadsheetId: String, private val spreadsheetToUpdateId: Pair<String, Boolean>) {
 
   fun report() {
     val spreadsheets = Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
@@ -21,11 +21,11 @@ class SingleSaleReporter(private val referenceSpreadsheetId: String, private val
         .build()
         .spreadsheets()
 
-    val title = (spreadsheets.get(spreadsheetToUpdateId)
+    val title = (spreadsheets.get(spreadsheetToUpdateId.first)
         .execute()
         .values.asSequence().first() as SpreadsheetProperties)["title"]
 
-    val allExportedValues = getValuesAlreadyPresentInSpreadsheet(spreadsheets)
+    val allExportedValues = getValuesAlreadyPresentInSpreadsheet(spreadsheets, spreadsheetToUpdateId.second)
 
     if (!allExportedValues.containsKey(title)) {
       return
@@ -34,11 +34,11 @@ class SingleSaleReporter(private val referenceSpreadsheetId: String, private val
     val titlesToSheetIds = getTitlesToSheetIds(spreadsheets, allExportedValues, title)
 
     allExportedValues[title]!!.forEach {
-      clearSheet(spreadsheets, spreadsheetToUpdateId, titlesToSheetIds[it.key])
-      addValuesToSheet(spreadsheets, spreadsheetToUpdateId, "%s%s".format(it.key, "!A1:B"), listOf(listOf("Total", "=SUM(E:E)")))
-      createHeader(spreadsheets, spreadsheetToUpdateId, "%s%s".format(it.key, RANGE), HEADER)
-      addValuesToSheet(spreadsheets, spreadsheetToUpdateId, "%s%s".format(it.key, RANGE), it.value)
-      resizeCells(spreadsheets, spreadsheetToUpdateId, titlesToSheetIds[it.key], 2)
+      clearSheet(spreadsheets, spreadsheetToUpdateId.first, titlesToSheetIds[it.key])
+      addValuesToSheet(spreadsheets, spreadsheetToUpdateId.first, "%s%s".format(it.key, "!A1:C"), listOf(listOf("Total", "=SUM(E:E)", "=SUM(F:F)")))
+      createHeader(spreadsheets, spreadsheetToUpdateId.first, "%s%s".format(it.key, RANGE), HEADER)
+      addValuesToSheet(spreadsheets, spreadsheetToUpdateId.first, "%s%s".format(it.key, RANGE), it.value)
+      resizeCells(spreadsheets, spreadsheetToUpdateId.first, titlesToSheetIds[it.key], 2)
     }
   }
 
@@ -52,7 +52,7 @@ class SingleSaleReporter(private val referenceSpreadsheetId: String, private val
     allExportedValues[title]!!
         .map { it.key }
         .filter { !titlesToSheetIds.containsKey(it) }
-        .forEach { createSheet(spreadsheets, spreadsheetToUpdateId, it) }
+        .forEach { createSheet(spreadsheets, spreadsheetToUpdateId.first, it) }
 
     if (allExportedValues[title]!!.isEmpty()) {
       return titlesToSheetIds
@@ -63,7 +63,7 @@ class SingleSaleReporter(private val referenceSpreadsheetId: String, private val
   }
 
   private fun getAllSheetTitles(spreadsheets: Sheets.Spreadsheets): Map<String, Int> {
-    return ((spreadsheets.get(spreadsheetToUpdateId)
+    return ((spreadsheets.get(spreadsheetToUpdateId.first)
         .setFields("sheets.properties")
         .execute()
         .values
@@ -73,8 +73,7 @@ class SingleSaleReporter(private val referenceSpreadsheetId: String, private val
         .toMap()
   }
 
-
-  private fun getValuesAlreadyPresentInSpreadsheet(spreadsheets: Sheets.Spreadsheets):
+  private fun getValuesAlreadyPresentInSpreadsheet(spreadsheets: Sheets.Spreadsheets, adaptPriceToMarket: Boolean):
       HashMap<String, HashMap<String, MutableList<List<*>>>> {
     val map = HashMap<String, HashMap<String, MutableList<List<*>>>>()
 
@@ -86,7 +85,15 @@ class SingleSaleReporter(private val referenceSpreadsheetId: String, private val
         .getValues()
         .filter { it.size >= 8 }
         .forEach {
-          map.getOrPut(it[6].toString()) {  HashMap() }.getOrPut(it[7].toString()) { mutableListOf() }.add(it.subList(0, 5))
+          map.getOrPut(it[6].toString()) {  HashMap() }
+              .getOrPut(it[7].toString()) { mutableListOf() }
+              .add(it.subList(0, 5)
+                + if (adaptPriceToMarket) {
+                  "=%s/IF(DATEVALUE(\"%s\") > DATEVALUE(\"09/03/2020\");(MIN(index(GOOGLEFINANCE(\"EURJPY\"; \"price\"; \"%s\");2;2); 120)-20);100)"
+                      .format(it[4], it[2],  it[2])
+                } else {
+                  "=%s/100".format(it[4])
+                })
         }
 
     return map

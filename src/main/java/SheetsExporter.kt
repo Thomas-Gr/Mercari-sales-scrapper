@@ -29,7 +29,7 @@ class SheetsExporter(private val spreadsheetId: String, private val sort: Boolea
 
     createHeader(spreadsheets, spreadsheetId, RANGE, HEADER)
     updateUpdatedData(data, alreadyExportedValues, spreadsheets)
-    appendNewValues(spreadsheets, data.filter { !alreadyExportedValues.containsKey(it.link) })
+    appendNewValues(spreadsheets, data.filter { !alreadyExportedValues.containsKey(extractKey(it.link)) })
     resizeCells(spreadsheets, spreadsheetId, 0, 1)
     if (sort) {
       sort(spreadsheets)
@@ -54,8 +54,9 @@ class SheetsExporter(private val spreadsheetId: String, private val sort: Boolea
         .get(spreadsheetId, RANGE)
         .execute()
         .getValues()
+        .drop(1)
         .filter { it.size >= 5 }
-        .mapIndexed { i, value -> value[1].toString() to Pair(i, value[5]) }
+        .mapIndexed { i, value -> extractKey(value[1].toString()) to Pair(i, value[5]) }
         .toMap()
   }
 
@@ -64,16 +65,16 @@ class SheetsExporter(private val spreadsheetId: String, private val sort: Boolea
       alreadyExportedValues: Map<String, Pair<Int, Any>>,
       spreadsheets: Sheets.Spreadsheets) {
     val dataThatWasNotExportedWithObsoleteState = data
-        .filter { alreadyExportedValues.containsKey(it.link) }
-        .filter { alreadyExportedValues.getValue(it.link).second != DONE && it.isDone }
+        .filter { alreadyExportedValues.containsKey(extractKey(it.link)) }
+        .filter { alreadyExportedValues.getValue(extractKey(it.link)).second != DONE && it.isDone }
         .map {
           Request().setUpdateCells(
               UpdateCellsRequest()
                   .setRange(GridRange().setSheetId(0)
                       .setStartColumnIndex(5)
                       .setEndColumnIndex(6)
-                      .setStartRowIndex(alreadyExportedValues.getValue(it.link).first)
-                      .setEndRowIndex(alreadyExportedValues.getValue(it.link).first + 1))
+                      .setStartRowIndex(alreadyExportedValues.getValue(extractKey(it.link)).first)
+                      .setEndRowIndex(alreadyExportedValues.getValue(extractKey(it.link)).first + 1))
                   .setFields("userEnteredValue")
                   .setRows(listOf(RowData().setValues(listOf(
                       CellData().setUserEnteredValue(ExtendedValue().setStringValue(DONE)))))))
@@ -100,4 +101,6 @@ class SheetsExporter(private val spreadsheetId: String, private val sort: Boolea
 
     addValuesToSheet(spreadsheets, spreadsheetId, RANGE, values)
   }
+
+  private fun extractKey(value: String) = value.substring(value.length - 13, value.length)
 }
