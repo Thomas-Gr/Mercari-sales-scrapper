@@ -14,8 +14,7 @@ fun addValuesToSheet(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, 
       .execute()
 }
 
-
-fun createSheet(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, sheetName: String?) {
+fun createSheet(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, sheetName: String) {
   spreadsheets.batchUpdate(
       spreadsheetId,
       BatchUpdateSpreadsheetRequest()
