@@ -1,4 +1,7 @@
+package scanner
+
 import com.google.common.base.Charsets.UTF_8
+import common.MercariData
 import java.io.File
 
 class Exporter(private val exportFile: String) {

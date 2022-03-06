@@ -1,8 +1,11 @@
+package scanner
+
 import utils.SheetsCredentialProvider.getCredentials
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.*
+import common.MercariData
 import utils.addValuesToSheet
 import utils.createHeader
 import utils.resizeCells
@@ -14,7 +17,7 @@ private val HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport()
 private const val RANGE = "Data!A1:H"
 private val HEADER = listOf("Image", "Link", "Time of purchase", "Translated title", "Price", "State")
 private  const val DONE = "Done"
-private val JAPANESE_TIME_FORMATTER = DateTimeFormatter.ofPattern("M月D日 HH:mm")
+private val JAPANESE_TIME_FORMATTER = DateTimeFormatter.ofPattern("YYYY年M月D日 H:mm")
 private val SHEET_TIME_FORMATTER = DateTimeFormatter.ofPattern("DD/MM HH:mm")
 
 class SheetsExporter(private val spreadsheetId: String, private val sort: Boolean = true) {
@@ -61,9 +64,9 @@ class SheetsExporter(private val spreadsheetId: String, private val sort: Boolea
   }
 
   private fun updateUpdatedData(
-      data: Collection<MercariData>,
-      alreadyExportedValues: Map<String, Pair<Int, Any>>,
-      spreadsheets: Sheets.Spreadsheets) {
+    data: Collection<MercariData>,
+    alreadyExportedValues: Map<String, Pair<Int, Any>>,
+    spreadsheets: Sheets.Spreadsheets) {
     val dataThatWasNotExportedWithObsoleteState = data
         .filter { alreadyExportedValues.containsKey(extractKey(it.link)) }
         .filter { alreadyExportedValues.getValue(extractKey(it.link)).second != DONE && it.isDone }

@@ -1,11 +1,18 @@
+package reporter
+
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.jackson2.JacksonFactory
 import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.Sheet
 import com.google.api.services.sheets.v4.model.SheetProperties
 import com.google.api.services.sheets.v4.model.SpreadsheetProperties
-import utils.*
 import utils.SheetsCredentialProvider.getCredentials
+import utils.addValuesToSheet
+import utils.batchedClearSheet
+import utils.batchedResizeCells
+import utils.createHeader
+import utils.createSheet
+import utils.executeBatchedRequests
 
 private val JSON_FACTORY = JacksonFactory.getDefaultInstance()
 private const val APPLICATION_NAME = "Mercari sales scrapper"
@@ -14,7 +21,6 @@ private const val RANGE = "!A2:H"
 private val HEADER = listOf("Image", "Link", "Time of purchase", "Translated title", "Price (yen)", "Price (euro)")
 
 class SingleSaleReporter(private val referenceSpreadsheetId: String, private val spreadsheetToUpdateId: Pair<String, Boolean>) {
-
   fun report() {
     val spreadsheets = Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
         .setApplicationName(APPLICATION_NAME)
@@ -23,7 +29,7 @@ class SingleSaleReporter(private val referenceSpreadsheetId: String, private val
 
     val title = (spreadsheets.get(spreadsheetToUpdateId.first)
         .execute()
-        .values.asSequence().first() as SpreadsheetProperties)["title"]
+        .values.first() as SpreadsheetProperties)["title"]
 
     val allExportedValues = getValuesAlreadyPresentInSpreadsheet(spreadsheets, spreadsheetToUpdateId.second)
 
@@ -34,11 +40,12 @@ class SingleSaleReporter(private val referenceSpreadsheetId: String, private val
     val titlesToSheetIds = getTitlesToSheetIds(spreadsheets, allExportedValues, title)
 
     allExportedValues[title]!!.forEach {
-      clearSheet(spreadsheets, spreadsheetToUpdateId.first, titlesToSheetIds[it.key])
+      val clearSheet = batchedClearSheet(titlesToSheetIds[it.key])
+      val resizeCells = batchedResizeCells(titlesToSheetIds[it.key], 2)
+      executeBatchedRequests(spreadsheets, spreadsheetToUpdateId.first, listOf(clearSheet, resizeCells))
       addValuesToSheet(spreadsheets, spreadsheetToUpdateId.first, "%s%s".format(it.key, "!A1:C"), listOf(listOf("Total", "=SUM(E:E)", "=SUM(F:F)")))
       createHeader(spreadsheets, spreadsheetToUpdateId.first, "%s%s".format(it.key, RANGE), HEADER)
       addValuesToSheet(spreadsheets, spreadsheetToUpdateId.first, "%s%s".format(it.key, RANGE), it.value)
-      resizeCells(spreadsheets, spreadsheetToUpdateId.first, titlesToSheetIds[it.key], 2)
     }
   }
 
@@ -87,13 +94,7 @@ class SingleSaleReporter(private val referenceSpreadsheetId: String, private val
         .forEach {
           map.getOrPut(it[6].toString()) {  HashMap() }
               .getOrPut(it[7].toString()) { mutableListOf() }
-              .add(it.subList(0, 5)
-                + if (adaptPriceToMarket) {
-                  "=%s/IF(DATEVALUE(\"%s\") > DATEVALUE(\"09/03/2020\");(MIN(index(GOOGLEFINANCE(\"EURJPY\"; \"price\"; \"%s\");2;2); 120)-20);100)"
-                      .format(it[4], it[2],  it[2])
-                } else {
-                  "=%s/100".format(it[4])
-                })
+              .add(it.subList(0, 5) + "=%s/100".format(it[4]))
         }
 
     return map
