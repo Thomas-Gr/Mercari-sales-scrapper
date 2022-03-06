@@ -9,7 +9,9 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.FileDataStoreFactory;
+import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.sheets.v4.SheetsScopes;
+import com.google.common.collect.ImmutableList;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -30,7 +32,7 @@ public final class SheetsCredentialProvider {
    * Global instance of the scopes required by this quickstart.
    * If modifying these scopes, delete your previously saved tokens/ folder.
    */
-  private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS);
+  private static final List<String> SCOPES = ImmutableList.of(SheetsScopes.SPREADSHEETS, DriveScopes.DRIVE_FILE, DriveScopes.DRIVE_METADATA);
   private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
 
   private SheetsCredentialProvider() {}
@@ -56,7 +58,7 @@ public final class SheetsCredentialProvider {
         .setAccessType("offline")
         .build();
     LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
-    return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user2");
+    return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user5");
   }
 
 }

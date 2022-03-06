@@ -4,6 +4,8 @@ import com.google.api.services.sheets.v4.Sheets
 import com.google.api.services.sheets.v4.model.*
 
 fun addValuesToSheet(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, range: String?, data: List<List<*>>) {
+  rateLimiter.acquire()
+  println("addValuesToSheet")
   spreadsheets
       .values()
       .append(
@@ -14,7 +16,23 @@ fun addValuesToSheet(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, 
       .execute()
 }
 
+fun updateValuesToSheet(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, range: String?, data: List<List<*>>) {
+  rateLimiter.acquire()
+  println("addValuesToSheet")
+  spreadsheets
+    .values()
+    .update(
+      spreadsheetId,
+      range,
+      ValueRange().setMajorDimension("ROWS").setValues(data))
+    .setValueInputOption("USER_ENTERED")
+    .execute()
+}
+
+@Deprecated("Use the batched version")
 fun createSheet(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, sheetName: String) {
+  rateLimiter.acquire()
+  println("createSheet")
   spreadsheets.batchUpdate(
       spreadsheetId,
       BatchUpdateSpreadsheetRequest()
@@ -24,7 +42,10 @@ fun createSheet(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, sheet
       .execute()
 }
 
+@Deprecated("Use the batched version")
 fun clearSheet(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, sheetId: Int?) {
+  rateLimiter.acquire()
+  println("clearSheet")
   spreadsheets.batchUpdate(
       spreadsheetId,
       BatchUpdateSpreadsheetRequest()
@@ -36,6 +57,8 @@ fun clearSheet(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, sheetI
 }
 
 fun createHeader(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, range: String?, header: List<*>) {
+  rateLimiter.acquire()
+  println("createHeader")
   spreadsheets
       .values()
       .update(
@@ -48,7 +71,10 @@ fun createHeader(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, rang
       .execute()
 }
 
+@Deprecated("Use the batched version")
 fun resizeCells(spreadsheets: Sheets.Spreadsheets, spreadsheetId: String?, sheetId: Int?, startRow: Int) {
+  rateLimiter.acquire()
+  println("resizeCells")
   spreadsheets.batchUpdate(
       spreadsheetId,
       BatchUpdateSpreadsheetRequest().setRequests(listOf(Request().setUpdateDimensionProperties(
