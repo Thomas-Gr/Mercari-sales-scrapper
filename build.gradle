@@ -12,6 +12,13 @@ repositories {
     mavenCentral()
 }
 
+jar {
+    manifest {
+        attributes 'Main-Class': 'toritsu_server.MainKt'
+    }
+    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.12'
     compile group: 'org.seleniumhq.selenium', name: 'selenium-java', version: '3.9.1'
@@ -23,6 +30,22 @@ dependencies {
     compile 'com.google.api-client:google-api-client:1.23.0'
     compile 'com.google.oauth-client:google-oauth-client-jetty:1.23.0'
     compile 'com.google.apis:google-api-services-sheets:v4-rev581-1.25.0'
+    compile 'com.google.apis:google-api-services-drive:v3-rev110-1.23.0'
+    implementation("com.squareup.okhttp3:okhttp:4.9.0")
+
+    implementation platform('com.amazonaws:aws-java-sdk-bom:1.11.1000')
+    implementation 'com.amazonaws:aws-java-sdk-dynamodb'
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-annotations
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.13.0'
+    // https://mvnrepository.com/artifact/joda-time/joda-time
+    implementation 'joda-time:joda-time:2.10.12'
+
+    // https://mvnrepository.com/artifact/ru.yandex.qatools.ashot/ashot
+    implementation 'ru.yandex.qatools.ashot:ashot:1.5.4'
+    // https://mvnrepository.com/artifact/com.opencsv/opencsv
+    implementation 'com.opencsv:opencsv:5.5.2'
+
+
 }
 compileKotlin {
     kotlinOptions {
